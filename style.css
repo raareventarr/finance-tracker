@@ -82,6 +82,8 @@ nav button[aria-current="page"] { color: var(--ink); font-weight: 800; }
 /* The + button: a gold peso coin */
 nav .add {
   justify-self: center;
+  display: grid;
+  place-items: center; /* puts the plus in the exact middle */
   width: 3.75rem;
   height: 3.75rem;
   margin-top: -1.75rem;
@@ -89,9 +91,6 @@ nav .add {
   border-radius: 50%;
   background: var(--coin);
   color: #14213D;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1;
   box-shadow: 0 0 0 4px var(--bg), inset 0 0 0 3px var(--coin-rim);
 }
 
