@@ -98,28 +98,28 @@ nav .add {
   box-shadow: 0 0 0 4px var(--bg), inset 0 0 0 3px var(--coin-rim);
 }
 
-/* Recent entries on Home */
+/* Lists: recent entries on Home, accounts on Accounts */
 h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.75rem; }
 
-#recent { list-style: none; padding: 0; background: var(--surface); border-radius: 14px; }
-#recent li + li { border-top: 1px solid var(--line); }
+.list { list-style: none; padding: 0; background: var(--surface); border-radius: 14px; }
+.list li + li { border-top: 1px solid var(--line); }
 
-#recent button {
+.list button {
   font: inherit;
   color: inherit;
   background: none;
   border: 0;
   text-align: left;
   width: 100%;
-  display: grid;
-  grid-template-columns: 4rem 1fr auto;
+  display: flex;
   gap: 0.75rem;
   align-items: baseline;
   padding: 0.85rem 1rem;
   cursor: pointer;
 }
 
-.when { color: var(--muted); font-size: 0.85rem; }
+.when { flex: none; width: 4rem; color: var(--muted); font-size: 0.85rem; }
+.what { flex: 1; }
 .what small { display: block; color: var(--muted); font-size: 0.85rem; }
 .amt { font-weight: 800; font-variant-numeric: tabular-nums; }
 .income .amt { color: var(--income); }
@@ -144,7 +144,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 legend, .field { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 .field { display: grid; gap: 0.35rem; }
 
-.field input {
+.field input, .field select {
   font: inherit;
   font-size: 1rem;
   color: var(--ink);
@@ -189,5 +189,18 @@ label:has(:focus-visible) { outline: 3px solid var(--coin); outline-offset: 2px;
 }
 .actions .primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .actions .danger { color: var(--danger); margin-right: auto; }
+
+.wide {
+  font: inherit;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
 
 :focus-visible { outline: 3px solid var(--coin); outline-offset: 2px; }

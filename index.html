@@ -17,13 +17,15 @@
       <h1 class="label">Total balance</h1>
       <p class="balance">₱0.00</p>
       <h2>Recent</h2>
-      <ul id="recent"></ul>
+      <ul class="list" id="recent"></ul>
       <p class="empty" id="recent-empty">No entries yet. Tap + to add your first expense.</p>
     </section>
 
     <section id="accounts" hidden>
       <h1>Accounts</h1>
-      <p class="empty">No accounts yet. Your banks, e-wallets and cards will appear here.</p>
+      <ul class="list" id="account-list"></ul>
+      <p class="empty" id="accounts-empty">No accounts yet. Add your banks and e-wallets to track their balances.</p>
+      <button class="wide" id="add-account">Add account</button>
     </section>
 
     <section id="reports" hidden>
@@ -66,6 +68,10 @@
         <legend>Category</legend>
       </fieldset>
 
+      <label class="field">Account
+        <select name="account"></select>
+      </label>
+
       <label class="field">Date
         <input name="date" type="date" required>
       </label>
@@ -77,7 +83,27 @@
       <div class="actions">
         <button type="button" id="delete" class="danger">Delete</button>
         <button type="button" id="duplicate">Duplicate</button>
-        <button type="button" id="cancel">Cancel</button>
+        <button type="button" class="cancel">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="account">
+    <form method="dialog" id="account-form">
+      <h2 id="account-title">Add account</h2>
+
+      <label class="field">Name
+        <input name="name" type="text" required maxlength="30" pattern=".*\S.*" placeholder="e.g. BDO, GCash">
+      </label>
+
+      <label class="field"><span id="balance-label">Starting balance (₱)</span>
+        <input name="balance" type="number" inputmode="decimal" step="0.01" required placeholder="0.00">
+      </label>
+
+      <div class="actions">
+        <button type="button" id="delete-account" class="danger">Delete</button>
+        <button type="button" class="cancel">Cancel</button>
         <button type="submit" class="primary">Save</button>
       </div>
     </form>
