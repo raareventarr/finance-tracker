@@ -1,0 +1,14 @@
+# Personal Claude Code settings
+.claude/settings.local.json
+
+# Secrets
+.env
+.env.*
+
+# Real financial data / backups (never commit)
+*backup*.json
+*.csv
+
+# Common clutter
+node_modules/
+.DS_Store
