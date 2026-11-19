@@ -43,22 +43,30 @@ function save() {
 
 let data = load();
 data.accounts ??= []; // data saved before Step 3 has no accounts list
+for (const a of data.accounts) a.kind ??= 'bank'; // accounts made before Step 4 are banks
 
-// Balance = income − expenses + adjustments (adjustments carry their own + or − sign).
+// Balance = income − expenses − transfers out + transfers in + adjustments
+// (adjustments carry their own + or − sign). A credit card's balance is negative: −balance = amount owed.
 function balance(accountId, transactions = data.transactions) {
   let sum = 0;
   for (const t of transactions) {
-    if (t.account === accountId) sum += t.type === 'expense' ? -t.amount : t.amount;
+    if (t.account === accountId) sum += t.type === 'expense' || t.type === 'transfer' ? -t.amount : t.amount;
+    if (t.to === accountId) sum += t.amount;
   }
   return sum;
 }
-console.assert(balance('a', [
-  { account: 'a', type: 'adjustment', amount: 1000 },
-  { account: 'a', type: 'expense', amount: 150 },
-  { account: 'a', type: 'income', amount: 50 },
-  { account: 'a', type: 'adjustment', amount: -100 },
-  { account: 'b', type: 'expense', amount: 999 },
-]) === 800, 'balance');
+const sample = [
+  { account: 'bank', type: 'adjustment', amount: 1000 },
+  { account: 'bank', type: 'expense', amount: 150 },
+  { account: 'bank', type: 'income', amount: 50 },
+  { account: 'bank', type: 'adjustment', amount: -100 },
+  { account: 'card', type: 'expense', amount: 300 },
+  { account: 'bank', type: 'transfer', to: 'card', amount: 200 },
+];
+console.assert(balance('bank', sample) === 600, 'bank balance');
+console.assert(balance('card', sample) === -100, 'card owes 100 after a partial payment');
+
+const accountName = (id) => data.accounts.find((a) => a.id === id)?.name ?? 'Cash';
 
 // ---------- Tabs ----------
 const tabs = document.querySelectorAll('nav [data-tab]');
@@ -89,7 +97,7 @@ let editingId = null; // null = adding a new entry
 function renderCategories(selected) {
   const box = document.getElementById('categories');
   box.querySelectorAll('label').forEach((label) => label.remove());
-  for (const name of data.categories[f.type.value]) {
+  for (const name of data.categories[f.type.value] ?? []) { // transfers have no categories
     const input = document.createElement('input');
     Object.assign(input, { type: 'radio', name: 'category', value: name, required: true, checked: name === selected });
     const label = document.createElement('label');
@@ -107,28 +115,53 @@ function openForm(tx) {
   f.date.value = editingId ? tx.date : today();
   f.note.value = tx?.note ?? '';
   renderCategories(tx?.category);
-
-  f.account.replaceChildren(...data.accounts.map((a) => new Option(a.name, a.id)), new Option('Cash', 'cash'));
   // Entries from before Step 3 have no account: treat them as Cash.
-  f.account.value = tx ? tx.account ?? 'cash' : data.lastAccount ?? 'cash';
-  if (!f.account.value) f.account.value = 'cash'; // last-used account was deleted
-
+  updateForm(tx ? tx.account ?? 'cash' : data.lastAccount ?? 'cash', tx?.to);
   document.getElementById('delete').hidden = !editingId;
   document.getElementById('duplicate').hidden = !editingId;
   dialog.showModal();
 }
 
+// Show the fields that fit the type: transfers have From/To and no category, and can't use Cash.
+function updateForm(from, to) {
+  const transfer = f.type.value === 'transfer';
+  const categories = document.getElementById('categories');
+  categories.hidden = categories.disabled = transfer; // disabled = skipped by "required" checks
+  document.getElementById('to-field').hidden = f.to.disabled = !transfer;
+  document.getElementById('account-label').textContent = transfer ? 'From' : 'Account';
+
+  const options = () => data.accounts.map((a) => new Option(a.name, a.id));
+  f.account.replaceChildren(...options(), ...(transfer ? [] : [new Option('Cash', 'cash')]));
+  f.to.replaceChildren(...options());
+  f.account.value = from;
+  if (!f.account.value) f.account.selectedIndex = 0; // account was deleted, or Cash on a transfer
+  f.to.value = to ?? '';
+  if (!f.to.value) f.to.selectedIndex = data.accounts.findIndex((a) => a.id !== f.account.value);
+  checkTransfer();
+}
+
+function checkTransfer() {
+  const same = f.type.value === 'transfer' && f.to.value === f.account.value;
+  f.to.setCustomValidity(same ? 'Choose a different account to transfer to.' : '');
+}
+
 form.addEventListener('change', (e) => {
-  if (e.target.name === 'type') renderCategories();
+  if (e.target.name === 'type') {
+    renderCategories();
+    updateForm(f.account.value, f.to.value);
+  }
+  if (e.target.name === 'account' || e.target.name === 'to') checkTransfer();
 });
 
 form.addEventListener('submit', () => {
+  const transfer = f.type.value === 'transfer';
   const tx = {
     id: editingId ?? newId(),
     type: f.type.value,
     amount: toCentavos(f.amount.value),
-    category: f.category.value,
+    category: transfer ? undefined : f.category.value,
     account: f.account.value,
+    to: transfer ? f.to.value : undefined,
     date: f.date.value,
     note: f.note.value.trim(),
   };
@@ -161,23 +194,36 @@ const accountDialog = document.getElementById('account');
 const af = document.getElementById('account-form').elements;
 let editingAccount = null; // null = adding a new account
 
+// Cards are entered as "amount owed" (a positive number) but stored as a negative balance.
+const isCard = () => af.kind.value === 'card';
+
+function updateBalanceLabel() {
+  document.getElementById('balance-label').textContent =
+    isCard() ? 'Amount owed now (₱)' : editingAccount ? 'Actual balance (₱)' : 'Starting balance (₱)';
+}
+
 function openAccount(account) {
   editingAccount = account ?? null;
   document.getElementById('account-title').textContent = account ? 'Edit account' : 'Add account';
-  document.getElementById('balance-label').textContent = account ? 'Actual balance (₱)' : 'Starting balance (₱)';
+  af.kind.value = account?.kind ?? 'bank';
+  document.getElementById('kind').hidden = !!account; // type can't change after creation
   af.name.value = account?.name ?? '';
-  af.balance.value = account ? (balance(account.id) / 100).toFixed(2) : '';
+  af.balance.value = account ? ((isCard() ? -1 : 1) * balance(account.id) / 100).toFixed(2) : '';
+  updateBalanceLabel();
   document.getElementById('delete-account').hidden = !account;
   accountDialog.showModal();
 }
 
+af.kind.forEach((radio) => radio.addEventListener('change', updateBalanceLabel));
+
 document.getElementById('account-form').addEventListener('submit', () => {
-  const account = editingAccount ?? { id: newId() };
+  const account = editingAccount ?? { id: newId(), kind: af.kind.value };
   account.name = af.name.value.trim();
   if (!editingAccount) data.accounts.push(account);
 
   // A starting balance or a correction is saved as an "adjustment" entry for the difference.
-  const difference = toCentavos(af.balance.value) - balance(account.id);
+  const target = (isCard() ? -1 : 1) * toCentavos(af.balance.value);
+  const difference = target - balance(account.id);
   if (difference !== 0) {
     data.transactions.push({
       id: newId(),
@@ -230,9 +276,15 @@ function row(className, parts, onClick) {
 }
 
 function render() {
-  // Home: total of all accounts (Cash has no balance)
-  const total = data.accounts.reduce((sum, a) => sum + balance(a.id), 0);
+  // Home: total of banks and e-wallets (Cash has no balance), and what the cards owe
+  const banks = data.accounts.filter((a) => a.kind === 'bank');
+  const cards = data.accounts.filter((a) => a.kind === 'card');
+  const total = banks.reduce((sum, a) => sum + balance(a.id), 0);
+  const owed = cards.reduce((sum, a) => sum - balance(a.id), 0);
   document.querySelector('.balance').textContent = peso.format(total / 100);
+  const owedLine = document.getElementById('owed');
+  owedLine.textContent = `Credit cards owed ${peso.format(owed / 100)}`;
+  owedLine.hidden = cards.length === 0;
 
   // Home: recent entries, newest date first; within a date, the most recently added first.
   const recent = data.transactions
@@ -242,16 +294,25 @@ function render() {
     .slice(0, 20);
 
   document.getElementById('recent').replaceChildren(...recent.map((tx) => {
-    const what = span('what', tx.category);
-    if (tx.note) what.append(Object.assign(document.createElement('small'), { textContent: tx.note }));
-    const sign = tx.type === 'income' ? '+' : '−';
+    const transfer = tx.type === 'transfer';
+    const what = span('what', transfer ? 'Transfer' : tx.category);
+    const detail = transfer ? `${accountName(tx.account)} to ${accountName(tx.to)}` : tx.note;
+    if (detail) what.append(Object.assign(document.createElement('small'), { textContent: detail }));
+    const sign = { income: '+', expense: '−', transfer: '' }[tx.type];
     return row(tx.type, [span('when', formatDate(tx.date)), what, span('amt', sign + peso.format(tx.amount / 100))], () => openForm(tx));
   }));
   document.getElementById('recent-empty').hidden = recent.length > 0;
 
-  // Accounts tab
-  document.getElementById('account-list').replaceChildren(...data.accounts.map((account) =>
-    row('account', [span('what', account.name), span('amt', peso.format(balance(account.id) / 100))], () => openAccount(account))));
+  // Accounts tab: banks first, then cards
+  document.getElementById('account-list').replaceChildren(...[...banks, ...cards].map((account) => {
+    const what = span('what', account.name);
+    let amount = peso.format(balance(account.id) / 100);
+    if (account.kind === 'card') {
+      what.append(Object.assign(document.createElement('small'), { textContent: 'Credit card' }));
+      amount = `${peso.format((0 - balance(account.id)) / 100)} owed`; // 0 − x avoids showing "−₱0.00"
+    }
+    return row('account', [what, span('amt', amount)], () => openAccount(account));
+  }));
   document.getElementById('accounts-empty').hidden = data.accounts.length > 0;
 }
 

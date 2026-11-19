@@ -16,6 +16,7 @@
     <section id="home">
       <h1 class="label">Total balance</h1>
       <p class="balance">₱0.00</p>
+      <p class="owed" id="owed" hidden></p>
       <h2>Recent</h2>
       <ul class="list" id="recent"></ul>
       <p class="empty" id="recent-empty">No entries yet. Tap + to add your first expense.</p>
@@ -58,18 +59,23 @@
       <fieldset class="segmented" aria-label="Type">
         <label><input type="radio" name="type" value="expense" checked> Expense</label>
         <label><input type="radio" name="type" value="income"> Income</label>
+        <label><input type="radio" name="type" value="transfer"> Transfer</label>
       </fieldset>
 
       <label class="field">Amount (₱)
-        <input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00">
+        <input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00" autofocus>
       </label>
 
       <fieldset class="chips" id="categories">
         <legend>Category</legend>
       </fieldset>
 
-      <label class="field">Account
-        <select name="account"></select>
+      <label class="field"><span id="account-label">Account</span>
+        <select name="account" required></select>
+      </label>
+
+      <label class="field" id="to-field">To
+        <select name="to" required></select>
       </label>
 
       <label class="field">Date
@@ -92,6 +98,11 @@
   <dialog id="account">
     <form method="dialog" id="account-form">
       <h2 id="account-title">Add account</h2>
+
+      <fieldset class="segmented" id="kind" aria-label="Account type">
+        <label><input type="radio" name="kind" value="bank" checked> Bank / e-wallet</label>
+        <label><input type="radio" name="kind" value="card"> Credit card</label>
+      </fieldset>
 
       <label class="field">Name
         <input name="name" type="text" required maxlength="30" pattern=".*\S.*" placeholder="e.g. BDO, GCash">
