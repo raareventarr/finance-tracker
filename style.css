@@ -1,0 +1,98 @@
+/* Colours from Philippine money: ₱1000-note blue, gold ₱20-coin yellow */
+:root {
+  --bg: #EEF2F6;
+  --surface: #FFFFFF;
+  --ink: #14213D;
+  --muted: #5B6B82;
+  --line: #D5DDE7;
+  --coin: #F2B705;
+  --coin-rim: #D99A00;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1A2E;
+    --surface: #18253D;
+    --ink: #E8EEF6;
+    --muted: #9AA8BD;
+    --line: #2A3A55;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100dvh;
+}
+
+main {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 7rem; /* bottom space so the tab bar never covers content */
+}
+
+h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; }
+
+.label { font-size: 0.9rem; font-weight: 600; color: var(--muted); margin: 0; }
+
+.balance {
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; /* digits line up in columns */
+  margin-bottom: 2rem;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 2rem 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+
+/* Bottom tab bar */
+nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+nav button {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0.75rem 0;
+  cursor: pointer;
+}
+
+nav button[aria-current="page"] { color: var(--ink); font-weight: 800; }
+
+/* The + button: a gold peso coin */
+nav .add {
+  justify-self: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  margin-top: -1.75rem;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--coin);
+  color: #14213D;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 4px var(--bg), inset 0 0 0 3px var(--coin-rim);
+}
+
+:focus-visible { outline: 3px solid var(--coin); outline-offset: 2px; }

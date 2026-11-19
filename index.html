@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14213D">
+  <title>Finance Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- shortcut: font loads from Google, so offline it falls back to the phone's font; self-host it in Step 7 -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <section id="home">
+      <h1 class="label">Total balance</h1>
+      <p class="balance">₱0.00</p>
+      <p class="empty">No entries yet. Tap + to add your first expense.</p>
+    </section>
+
+    <section id="accounts" hidden>
+      <h1>Accounts</h1>
+      <p class="empty">No accounts yet. Your banks, e-wallets and cards will appear here.</p>
+    </section>
+
+    <section id="reports" hidden>
+      <h1>Reports</h1>
+      <p class="empty">Monthly reports appear here once you've added entries.</p>
+    </section>
+
+    <section id="settings" hidden>
+      <h1>Settings</h1>
+      <p class="empty">Categories and backups will live here.</p>
+    </section>
+  </main>
+
+  <nav>
+    <button data-tab="home" aria-current="page">Home</button>
+    <button data-tab="accounts">Accounts</button>
+    <button class="add" aria-label="Add entry">+</button>
+    <button data-tab="reports">Reports</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
