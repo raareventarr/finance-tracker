@@ -7,6 +7,8 @@
   --line: #D5DDE7;
   --coin: #F2B705;
   --coin-rim: #D99A00;
+  --income: #157F3B;
+  --danger: #B42318;
   color-scheme: light dark;
 }
 
@@ -17,6 +19,8 @@
     --ink: #E8EEF6;
     --muted: #9AA8BD;
     --line: #2A3A55;
+    --income: #4ADE80;
+    --danger: #F97066;
   }
 }
 
@@ -93,5 +97,97 @@ nav .add {
   color: #14213D;
   box-shadow: 0 0 0 4px var(--bg), inset 0 0 0 3px var(--coin-rim);
 }
+
+/* Recent entries on Home */
+h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.75rem; }
+
+#recent { list-style: none; padding: 0; background: var(--surface); border-radius: 14px; }
+#recent li + li { border-top: 1px solid var(--line); }
+
+#recent button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  text-align: left;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 4rem 1fr auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+}
+
+.when { color: var(--muted); font-size: 0.85rem; }
+.what small { display: block; color: var(--muted); font-size: 0.85rem; }
+.amt { font-weight: 800; font-variant-numeric: tabular-nums; }
+.income .amt { color: var(--income); }
+
+/* Add / edit form: slides up from the bottom like a phone sheet */
+dialog {
+  width: 100%;
+  max-width: 32rem;
+  margin: auto auto 0;
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 1.25rem 1rem calc(1rem + env(safe-area-inset-bottom));
+}
+dialog::backdrop { background: rgb(15 26 46 / 0.55); }
+
+#entry-form { display: grid; gap: 1.1rem; }
+#entry-form h2 { margin: 0; }
+
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend, .field { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.field { display: grid; gap: 0.35rem; }
+
+.field input {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+  width: 100%;
+}
+.field input[name="amount"] { font-size: 1.75rem; font-weight: 800; }
+
+/* Radio buttons hidden visually but still usable by keyboard and screen readers */
+.segmented input, .chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.segmented label, .chips label { cursor: pointer; font-weight: 600; }
+label:has(:focus-visible) { outline: 3px solid var(--coin); outline-offset: 2px; }
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 4px;
+}
+.segmented label { text-align: center; padding: 0.6rem; border-radius: 9px; color: var(--muted); }
+.segmented label:has(:checked) { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 33 61 / 0.18); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chips legend { margin-bottom: 0.5rem; }
+.chips label { padding: 0.6rem 0.95rem; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); }
+.chips label:has(:checked) { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
+.actions button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.75rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.actions .primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.actions .danger { color: var(--danger); margin-right: auto; }
 
 :focus-visible { outline: 3px solid var(--coin); outline-offset: 2px; }

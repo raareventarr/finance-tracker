@@ -16,7 +16,9 @@
     <section id="home">
       <h1 class="label">Total balance</h1>
       <p class="balance">₱0.00</p>
-      <p class="empty">No entries yet. Tap + to add your first expense.</p>
+      <h2>Recent</h2>
+      <ul id="recent"></ul>
+      <p class="empty" id="recent-empty">No entries yet. Tap + to add your first expense.</p>
     </section>
 
     <section id="accounts" hidden>
@@ -46,6 +48,40 @@
     <button data-tab="reports">Reports</button>
     <button data-tab="settings">Settings</button>
   </nav>
+
+  <dialog id="entry">
+    <form method="dialog" id="entry-form">
+      <h2 id="entry-title">Add entry</h2>
+
+      <fieldset class="segmented" aria-label="Type">
+        <label><input type="radio" name="type" value="expense" checked> Expense</label>
+        <label><input type="radio" name="type" value="income"> Income</label>
+      </fieldset>
+
+      <label class="field">Amount (₱)
+        <input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00">
+      </label>
+
+      <fieldset class="chips" id="categories">
+        <legend>Category</legend>
+      </fieldset>
+
+      <label class="field">Date
+        <input name="date" type="date" required>
+      </label>
+
+      <label class="field">Note
+        <input name="note" type="text" maxlength="100" placeholder="Optional">
+      </label>
+
+      <div class="actions">
+        <button type="button" id="delete" class="danger">Delete</button>
+        <button type="button" id="duplicate">Duplicate</button>
+        <button type="button" id="cancel">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
