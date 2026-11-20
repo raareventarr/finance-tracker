@@ -405,7 +405,7 @@ document.getElementById('import-file').addEventListener('change', async (e) => {
     // not JSON, or not shaped like our data: caught by the check below
   }
   if (!isValidBackup(backup)) {
-    alert("That file isn't a Finance Tracker backup. Nothing was changed.");
+    alert("That file isn't a Pitaka backup. Nothing was changed.");
     return;
   }
   const accounts = backup.accounts.length;

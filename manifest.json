@@ -1,6 +1,6 @@
 {
-  "name": "Finance Tracker",
-  "short_name": "Finance",
+  "name": "Pitaka",
+  "short_name": "Pitaka",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

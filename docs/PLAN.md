@@ -1,4 +1,6 @@
-# Finance Tracker: Plan
+# Pitaka: Plan
+
+Pitaka (Tagalog for "wallet") is a personal finance tracker.
 
 Decisions made in the first planning session (2026-11-20).
 
