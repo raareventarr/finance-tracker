@@ -13,6 +13,8 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // The manifest is only read when installing, so always fetch it fresh (a stale one shows the old name).
+  if (new URL(event.request.url).pathname.endsWith('/manifest.json')) return;
   event.respondWith(caches.open(CACHE).then(async (cache) => {
     const saved = await cache.match(event.request, { ignoreSearch: true }); // "?action=add" uses the same page
     const fresh = fetch(event.request).then((response) => {
