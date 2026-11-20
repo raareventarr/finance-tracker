@@ -14,7 +14,15 @@
 <body>
   <main>
     <section id="home">
-      <h1 class="label">Total balance</h1>
+      <div class="banner" id="backup-banner" hidden>
+        <p id="banner-text"></p>
+        <button class="export">Back up now</button>
+      </div>
+
+      <div class="balance-head">
+        <h1 class="label">Total balance</h1>
+        <button id="toggle-amounts" aria-pressed="false"></button>
+      </div>
       <p class="balance">₱0.00</p>
       <p class="owed" id="owed" hidden></p>
       <h2>Recent</h2>
@@ -62,7 +70,20 @@
 
     <section id="settings" hidden>
       <h1>Settings</h1>
-      <p class="empty">Categories and backups will live here.</p>
+
+      <h2>Backup</h2>
+      <p class="hint" id="backup-status"></p>
+      <button class="wide export">Export backup</button>
+      <button class="wide" id="import">Import backup</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+
+      <h2>Expense categories</h2>
+      <ul class="list" id="expense-categories"></ul>
+      <button class="wide" data-add-category="expense">Add expense category</button>
+
+      <h2>Income categories</h2>
+      <ul class="list" id="income-categories"></ul>
+      <button class="wide" data-add-category="income">Add income category</button>
     </section>
   </main>
 
@@ -140,6 +161,22 @@
 
       <div class="actions">
         <button type="button" id="delete-account" class="danger">Delete</button>
+        <button type="button" class="cancel">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="category">
+    <form method="dialog" id="category-form">
+      <h2 id="category-title">Add category</h2>
+
+      <label class="field">Name
+        <input name="name" type="text" required maxlength="30" pattern=".*\S.*">
+      </label>
+
+      <div class="actions">
+        <button type="button" id="delete-category" class="danger">Delete</button>
         <button type="button" class="cancel">Cancel</button>
         <button type="submit" class="primary">Save</button>
       </div>

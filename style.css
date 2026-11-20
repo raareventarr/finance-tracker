@@ -200,6 +200,48 @@ legend, .field { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 .actions .primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .actions .danger { color: var(--danger); margin-right: auto; }
 
+/* Home: hide-amounts toggle and backup reminder */
+.balance-head { display: flex; align-items: center; justify-content: space-between; }
+#toggle-amounts {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.banner {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--coin);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.banner button {
+  flex: none;
+  font: inherit;
+  font-weight: 600;
+  background: var(--coin);
+  color: #14213D;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+/* Settings */
+#settings h2 { margin-top: 1.75rem; }
+.hint { color: var(--muted); font-size: 0.9rem; }
+.list .category { align-items: center; }
+
 /* Reports */
 .month { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .month h1 { margin: 0; }

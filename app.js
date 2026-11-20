@@ -41,9 +41,17 @@ function save() {
   }
 }
 
-let data = load();
-data.accounts ??= []; // data saved before Step 3 has no accounts list
-for (const a of data.accounts) a.kind ??= 'bank'; // accounts made before Step 4 are banks
+// Bring data saved by older versions of the app (or an older backup) up to date.
+function upgrade(d) {
+  d.accounts ??= []; // before Step 3 there were no accounts
+  for (const a of d.accounts) a.kind ??= 'bank'; // before Step 4 every account was a bank
+  return d;
+}
+
+let data = upgrade(load());
+
+// Every amount on screen goes through here, so "Hide amounts" covers them all.
+const money = (centavos) => (data.hideAmounts ? '₱••••' : peso.format(centavos / 100));
 
 // Balance = income − expenses − transfers out + transfers in + adjustments
 // (adjustments carry their own + or − sign). A credit card's balance is negative: −balance = amount owed.
@@ -282,7 +290,7 @@ function entryRow(tx) {
   const detail = transfer ? `${accountName(tx.account)} to ${accountName(tx.to)}` : tx.note;
   if (detail) what.append(Object.assign(document.createElement('small'), { textContent: detail }));
   const sign = { income: '+', expense: '−', transfer: '' }[tx.type];
-  return row(tx.type, [span('when', formatDate(tx.date)), what, span('amt', sign + peso.format(tx.amount / 100))], () => openForm(tx));
+  return row(tx.type, [span('when', formatDate(tx.date)), what, span('amt', sign + money(tx.amount))], () => openForm(tx));
 }
 
 const newestFirst = (list) => [...list].reverse().sort((a, b) => b.date.localeCompare(a.date));
@@ -293,9 +301,9 @@ function render() {
   const cards = data.accounts.filter((a) => a.kind === 'card');
   const total = banks.reduce((sum, a) => sum + balance(a.id), 0);
   const owed = cards.reduce((sum, a) => sum - balance(a.id), 0);
-  document.querySelector('.balance').textContent = peso.format(total / 100);
+  document.querySelector('.balance').textContent = money(total);
   const owedLine = document.getElementById('owed');
-  owedLine.textContent = `Credit cards owed ${peso.format(owed / 100)}`;
+  owedLine.textContent = `Credit cards owed ${money(owed)}`;
   owedLine.hidden = cards.length === 0;
 
   // Home: recent entries, newest date first; within a date, the most recently added first.
@@ -307,17 +315,157 @@ function render() {
   // Accounts tab: banks first, then cards
   document.getElementById('account-list').replaceChildren(...[...banks, ...cards].map((account) => {
     const what = span('what', account.name);
-    let amount = peso.format(balance(account.id) / 100);
+    let amount = money(balance(account.id));
     if (account.kind === 'card') {
       what.append(Object.assign(document.createElement('small'), { textContent: 'Credit card' }));
-      amount = `${peso.format((0 - balance(account.id)) / 100)} owed`; // 0 − x avoids showing "−₱0.00"
+      amount = `${money(0 - balance(account.id))} owed`; // 0 − x avoids showing "−₱0.00"
     }
     return row('account', [what, span('amt', amount)], () => openAccount(account));
   }));
   document.getElementById('accounts-empty').hidden = data.accounts.length > 0;
 
+  // Hide amounts toggle
+  const toggle = document.getElementById('toggle-amounts');
+  toggle.textContent = data.hideAmounts ? '👁 Show' : '👁 Hide';
+  toggle.setAttribute('aria-pressed', String(!!data.hideAmounts));
+
+  // Backup reminder on Home, and status in Settings
+  const days = data.lastBackup ? daysSince(data.lastBackup) : null;
+  document.getElementById('backup-banner').hidden = data.transactions.length === 0 || (days !== null && days < 30);
+  document.getElementById('banner-text').textContent =
+    days === null ? "You haven't backed up your data yet." : `Your last backup was ${days} days ago.`;
+  document.getElementById('backup-status').textContent = days === null
+    ? 'No backup yet. Export one and keep the file somewhere safe, like Google Drive.'
+    : `Last backup: ${formatDate(data.lastBackup)}${days > 0 ? ` (${days} days ago)` : ''}.`;
+
+  // Settings: categories (expense ones show their chart colour)
+  for (const type of ['expense', 'income']) {
+    document.getElementById(`${type}-categories`).replaceChildren(...data.categories[type].map((name) => {
+      const parts = [span('what', name)];
+      if (type === 'expense') {
+        const swatch = span('swatch', '');
+        swatch.style.background = categoryColor(name);
+        parts.unshift(swatch);
+      }
+      return row('category', parts, () => openCategory(type, name));
+    }));
+  }
+
   renderReport();
 }
+
+const daysSince = (date) => Math.round((new Date(today()) - new Date(date)) / 86400000);
+
+document.getElementById('toggle-amounts').addEventListener('click', () => {
+  data.hideAmounts = !data.hideAmounts;
+  save();
+  render();
+});
+
+// ---------- Backups ----------
+function exportBackup() {
+  data.lastBackup = today();
+  const file = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
+  const link = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(file),
+    download: `finance-backup-${today()}.json`,
+  });
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 10000); // give slower phones time to start the download
+  save();
+  render();
+}
+document.querySelectorAll('.export').forEach((button) => button.addEventListener('click', exportBackup));
+
+// A backup file comes from outside the app, so check its shape before trusting it.
+function isValidBackup(d) {
+  const names = (list) => Array.isArray(list) && list.every((s) => typeof s === 'string');
+  return typeof d === 'object' && d !== null
+    && names(d.categories?.expense) && names(d.categories?.income)
+    && Array.isArray(d.accounts) && d.accounts.every((a) =>
+      typeof a.id === 'string' && typeof a.name === 'string' && ['bank', 'card'].includes(a.kind))
+    && Array.isArray(d.transactions) && d.transactions.every((t) =>
+      typeof t.id === 'string' && ['expense', 'income', 'transfer', 'adjustment'].includes(t.type)
+      && Number.isInteger(t.amount) && /^\d{4}-\d{2}-\d{2}$/.test(t.date));
+}
+console.assert(isValidBackup(fresh()), 'empty data is a valid backup');
+console.assert(!isValidBackup({ ...fresh(), transactions: [{ id: 'x', type: 'expense', amount: 1.5, date: '2026-11-01' }] }), 'reject non-centavo amount');
+console.assert(!isValidBackup({ hello: 'world' }), 'reject other JSON');
+
+document.getElementById('import').addEventListener('click', () => document.getElementById('import-file').click());
+
+document.getElementById('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // so picking the same file again still triggers this
+  if (!file) return;
+  let backup = null;
+  try {
+    backup = upgrade(JSON.parse(await file.text()));
+  } catch {
+    // not JSON, or not shaped like our data: caught by the check below
+  }
+  if (!isValidBackup(backup)) {
+    alert("That file isn't a Finance Tracker backup. Nothing was changed.");
+    return;
+  }
+  const accounts = backup.accounts.length;
+  const entries = backup.transactions.filter((t) => t.type !== 'adjustment').length;
+  const summary = `${accounts} ${accounts === 1 ? 'account' : 'accounts'}, ${entries} ${entries === 1 ? 'entry' : 'entries'}`;
+  if (!confirm(`Replace ALL current data with this backup (${summary})?`)) return;
+  localStorage.setItem(`${KEY}-before-import`, JSON.stringify(data)); // safety copy of what we're replacing
+  data = backup;
+  save();
+  render();
+  alert('Backup restored.');
+});
+
+// ---------- Categories ----------
+const categoryDialog = document.getElementById('category');
+const cf = document.getElementById('category-form').elements;
+let editingCategory = null; // { type, name }; name is null when adding
+
+function openCategory(type, name = null) {
+  editingCategory = { type, name };
+  document.getElementById('category-title').textContent = name ? 'Edit category' : `Add ${type} category`;
+  cf.name.value = name ?? '';
+  cf.name.setCustomValidity('');
+  // Each type needs at least one category, or the add form can't be saved.
+  document.getElementById('delete-category').hidden = !name || data.categories[type].length === 1;
+  categoryDialog.showModal();
+}
+
+cf.name.addEventListener('input', () => {
+  const { type, name } = editingCategory;
+  const value = cf.name.value.trim();
+  const taken = value !== name && data.categories[type].includes(value);
+  cf.name.setCustomValidity(taken ? 'That category already exists.' : '');
+});
+
+document.getElementById('category-form').addEventListener('submit', () => {
+  const { type, name } = editingCategory;
+  const list = data.categories[type];
+  const newName = cf.name.value.trim();
+  if (!name) list.push(newName);
+  else {
+    list[list.indexOf(name)] = newName;
+    // Renaming also renames past entries, so reports keep them together.
+    for (const t of data.transactions) if (t.type === type && t.category === name) t.category = newName;
+  }
+  save();
+  render();
+});
+
+document.getElementById('delete-category').addEventListener('click', () => {
+  const { type, name } = editingCategory;
+  if (!confirm(`Delete "${name}"? Past entries keep this category; you just can't pick it for new ones.`)) return;
+  data.categories[type] = data.categories[type].filter((c) => c !== name);
+  save();
+  render();
+  categoryDialog.close();
+});
+
+document.querySelectorAll('[data-add-category]').forEach((button) =>
+  button.addEventListener('click', () => openCategory(button.dataset.addCategory)));
 
 // ---------- Reports ----------
 let reportMonth = today().slice(0, 7); // 'YYYY-MM'
@@ -375,7 +523,7 @@ function categoryColor(name) {
 function compareText(now, before) {
   const last = monthName(shiftMonth(reportMonth, -1), { month: 'long' });
   if (now === before) return `Same as ${last}`;
-  return `${now > before ? '▲' : '▼'} ${peso.format(Math.abs(now - before) / 100)} vs ${last}`;
+  return `${now > before ? '▲' : '▼'} ${money(Math.abs(now - before))} vs ${last}`;
 }
 
 function renderReport() {
@@ -387,7 +535,7 @@ function renderReport() {
   document.getElementById('cashflow-report').hidden = view !== 'cashflow';
 
   // Spending: donut + one expandable row per category, biggest first
-  document.getElementById('spent-total').textContent = peso.format(r.spent / 100);
+  document.getElementById('spent-total').textContent = money(r.spent);
   document.getElementById('spent-compare').textContent = compareText(r.spent, before.spent);
   const categories = Object.entries(r.byCategory).sort((a, b) => b[1] - a[1]);
   const percent = (amount) => `${Math.round((amount / r.spent) * 100)}%`;
@@ -410,7 +558,7 @@ function renderReport() {
     const swatch = span('swatch', '');
     swatch.style.background = categoryColor(name);
     const summary = document.createElement('summary');
-    summary.append(swatch, span('what', name), span('pct', percent(amount)), span('amt', peso.format(amount / 100)));
+    summary.append(swatch, span('what', name), span('pct', percent(amount)), span('amt', money(amount)));
     const entries = document.createElement('ul');
     entries.className = 'list';
     entries.append(...newestFirst(data.transactions.filter((t) =>
@@ -421,14 +569,14 @@ function renderReport() {
   }));
 
   // Cash flow
-  document.getElementById('saved-total').textContent = peso.format(r.saved / 100);
+  document.getElementById('saved-total').textContent = money(r.saved);
   document.getElementById('saved-compare').textContent = compareText(r.saved, before.saved);
   const flowRow = (label, note, amount, sign) => {
     const what = span('what', label);
     what.append(Object.assign(document.createElement('small'), { textContent: note }));
     const li = document.createElement('li');
     li.className = 'flow';
-    li.append(what, span('amt', sign + peso.format(amount / 100)));
+    li.append(what, span('amt', sign + money(amount)));
     return li;
   };
   document.getElementById('cashflow-list').replaceChildren(
