@@ -12,3 +12,6 @@
 # Common clutter
 node_modules/
 .DS_Store
+
+# Personal project instructions for Claude (kept off GitHub)
+CLAUDE.md
