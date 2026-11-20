@@ -598,3 +598,12 @@ document.getElementById('report-view').addEventListener('change', renderReport);
 document.getElementById('print').addEventListener('click', () => window.print());
 
 render();
+
+// "Add expense" shortcut (long-press the app icon) opens the app at ?action=add.
+if (new URLSearchParams(location.search).get('action') === 'add') {
+  history.replaceState(null, '', location.pathname); // so a refresh doesn't reopen the form
+  openForm();
+}
+
+// Offline support. Fails harmlessly when the page is opened as a file instead of from a web address.
+navigator.serviceWorker?.register('sw.js').catch(() => {});
