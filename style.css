@@ -9,6 +9,9 @@
   --coin-rim: #D99A00;
   --income: #157F3B;
   --danger: #B42318;
+  /* Chart colours, one per category in list order (validated colour-blind-safe order) */
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100;
+  --c5: #e87ba4; --c6: #008300; --c7: #6250d6; --c8: #e34948;
   color-scheme: light dark;
 }
 
@@ -21,6 +24,8 @@
     --line: #2A3A55;
     --income: #4ADE80;
     --danger: #F97066;
+    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500;
+    --c5: #d55181; --c6: #0ca30c; --c7: #9085e9; --c8: #e66767;
   }
 }
 
@@ -194,6 +199,50 @@ legend, .field { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 }
 .actions .primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .actions .danger { color: var(--danger); margin-right: auto; }
+
+/* Reports */
+.month { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.month h1 { margin: 0; }
+.month button {
+  font: inherit;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+#report-view { margin-bottom: 1.5rem; }
+
+.big { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.compare { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; font-variant-numeric: tabular-nums; }
+
+.donut {
+  width: 11rem;
+  aspect-ratio: 1;
+  margin: 0.5rem auto 1.5rem;
+  border-radius: 50%;
+  mask: radial-gradient(circle, transparent 57%, #000 58%); /* cut the hole */
+}
+
+.categories { background: var(--surface); border-radius: 14px; }
+.categories details + details { border-top: 1px solid var(--line); }
+summary { display: flex; gap: 0.75rem; align-items: center; padding: 0.85rem 1rem; cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+.swatch { flex: none; width: 0.75rem; height: 0.75rem; border-radius: 3px; }
+.pct { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+details .list { background: var(--bg); margin: 0 0.5rem 0.5rem; border-radius: 10px; }
+
+.flow { display: flex; gap: 0.75rem; align-items: baseline; padding: 0.85rem 1rem; }
+
+/* Save as PDF: print only the report, in light colours, keeping the chart colours */
+@media print {
+  nav, .month button, #report-view, #print { display: none !important; }
+  :root { --bg: #fff; --surface: #fff; --ink: #000; --muted: #444; --line: #ccc; }
+  main { padding: 0; }
+  .donut, .swatch { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
 
 .wide {
   font: inherit;

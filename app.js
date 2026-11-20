@@ -275,6 +275,18 @@ function row(className, parts, onClick) {
   return li;
 }
 
+// One entry as a tappable row (Home's Recent list and the report's category lists).
+function entryRow(tx) {
+  const transfer = tx.type === 'transfer';
+  const what = span('what', transfer ? 'Transfer' : tx.category);
+  const detail = transfer ? `${accountName(tx.account)} to ${accountName(tx.to)}` : tx.note;
+  if (detail) what.append(Object.assign(document.createElement('small'), { textContent: detail }));
+  const sign = { income: '+', expense: '−', transfer: '' }[tx.type];
+  return row(tx.type, [span('when', formatDate(tx.date)), what, span('amt', sign + peso.format(tx.amount / 100))], () => openForm(tx));
+}
+
+const newestFirst = (list) => [...list].reverse().sort((a, b) => b.date.localeCompare(a.date));
+
 function render() {
   // Home: total of banks and e-wallets (Cash has no balance), and what the cards owe
   const banks = data.accounts.filter((a) => a.kind === 'bank');
@@ -287,20 +299,9 @@ function render() {
   owedLine.hidden = cards.length === 0;
 
   // Home: recent entries, newest date first; within a date, the most recently added first.
-  const recent = data.transactions
-    .filter((t) => t.type !== 'adjustment')
-    .reverse()
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 20);
+  const recent = newestFirst(data.transactions.filter((t) => t.type !== 'adjustment')).slice(0, 20);
 
-  document.getElementById('recent').replaceChildren(...recent.map((tx) => {
-    const transfer = tx.type === 'transfer';
-    const what = span('what', transfer ? 'Transfer' : tx.category);
-    const detail = transfer ? `${accountName(tx.account)} to ${accountName(tx.to)}` : tx.note;
-    if (detail) what.append(Object.assign(document.createElement('small'), { textContent: detail }));
-    const sign = { income: '+', expense: '−', transfer: '' }[tx.type];
-    return row(tx.type, [span('when', formatDate(tx.date)), what, span('amt', sign + peso.format(tx.amount / 100))], () => openForm(tx));
-  }));
+  document.getElementById('recent').replaceChildren(...recent.map(entryRow));
   document.getElementById('recent-empty').hidden = recent.length > 0;
 
   // Accounts tab: banks first, then cards
@@ -314,6 +315,138 @@ function render() {
     return row('account', [what, span('amt', amount)], () => openAccount(account));
   }));
   document.getElementById('accounts-empty').hidden = data.accounts.length > 0;
+
+  renderReport();
 }
+
+// ---------- Reports ----------
+let reportMonth = today().slice(0, 7); // 'YYYY-MM'
+
+function shiftMonth(month, by) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m - 1 + by, 1).toLocaleDateString('en-CA').slice(0, 7);
+}
+console.assert(shiftMonth('2026-01', -1) === '2025-12' && shiftMonth('2026-12', 1) === '2027-01', 'month math');
+
+const monthName = (month, options = { month: 'long', year: 'numeric' }) =>
+  new Date(`${month}-01T00:00`).toLocaleDateString('en-PH', options);
+
+// Both reports for one month. Spending counts every purchase (cards included);
+// cash flow counts only money that left banks, e-wallets and cash (card bills, not card purchases).
+// Adjustments are never counted.
+function monthReport(month, transactions = data.transactions, cardIds = new Set(data.accounts.filter((a) => a.kind === 'card').map((a) => a.id))) {
+  const r = { byCategory: {}, spent: 0, income: 0, expensesPaid: 0, cardPayments: 0 };
+  for (const t of transactions) {
+    if (!t.date.startsWith(month)) continue;
+    const onCard = cardIds.has(t.account);
+    if (t.type === 'expense') {
+      r.byCategory[t.category] = (r.byCategory[t.category] ?? 0) + t.amount;
+      r.spent += t.amount;
+      if (!onCard) r.expensesPaid += t.amount;
+    }
+    if (t.type === 'income' && !onCard) r.income += t.amount;
+    if (t.type === 'transfer' && cardIds.has(t.to) && !onCard) r.cardPayments += t.amount;
+  }
+  r.saved = r.income - r.expensesPaid - r.cardPayments;
+  return r;
+}
+{
+  const r = monthReport('2026-11', [
+    { date: '2026-11-01', type: 'income', account: 'bank', amount: 1000 },
+    { date: '2026-11-02', type: 'expense', account: 'bank', category: 'Food', amount: 300 },
+    { date: '2026-11-03', type: 'expense', account: 'card', category: 'Food', amount: 200 },
+    { date: '2026-11-04', type: 'expense', account: 'cash', category: 'Bills', amount: 100 },
+    { date: '2026-11-05', type: 'transfer', account: 'bank', to: 'card', amount: 150 },
+    { date: '2026-11-06', type: 'transfer', account: 'bank', to: 'wallet', amount: 500 },
+    { date: '2026-11-07', type: 'adjustment', account: 'bank', amount: 9999 },
+    { date: '2026-10-31', type: 'expense', account: 'bank', category: 'Food', amount: 7777 },
+  ], new Set(['card']));
+  console.assert(r.byCategory.Food === 500 && r.byCategory.Bills === 100 && r.spent === 600, 'spending report');
+  console.assert(r.income === 1000 && r.expensesPaid === 400 && r.cardPayments === 150 && r.saved === 450, 'cash flow report');
+}
+
+// Colour follows the category (its place in the category list), never its rank in the chart.
+function categoryColor(name) {
+  const i = data.categories.expense.indexOf(name);
+  // shortcut: only 8 chart colours; categories past the 8th share grey. Fold small ones into Other if that happens.
+  return i >= 0 && i < 8 ? `var(--c${i + 1})` : 'var(--muted)';
+}
+
+function compareText(now, before) {
+  const last = monthName(shiftMonth(reportMonth, -1), { month: 'long' });
+  if (now === before) return `Same as ${last}`;
+  return `${now > before ? '▲' : '▼'} ${peso.format(Math.abs(now - before) / 100)} vs ${last}`;
+}
+
+function renderReport() {
+  const r = monthReport(reportMonth);
+  const before = monthReport(shiftMonth(reportMonth, -1));
+  const view = document.querySelector('[name="report"]:checked').value;
+  document.getElementById('month-label').textContent = monthName(reportMonth);
+  document.getElementById('spending-report').hidden = view !== 'spending';
+  document.getElementById('cashflow-report').hidden = view !== 'cashflow';
+
+  // Spending: donut + one expandable row per category, biggest first
+  document.getElementById('spent-total').textContent = peso.format(r.spent / 100);
+  document.getElementById('spent-compare').textContent = compareText(r.spent, before.spent);
+  const categories = Object.entries(r.byCategory).sort((a, b) => b[1] - a[1]);
+  const percent = (amount) => `${Math.round((amount / r.spent) * 100)}%`;
+
+  let start = 0;
+  const stops = categories.map(([name, amount]) => {
+    const end = start + (amount / r.spent) * 360;
+    const gap = categories.length > 1 ? 1.5 : 0; // thin gap between slices
+    const stop = `${categoryColor(name)} ${start}deg ${end - gap}deg, transparent 0 ${end}deg`;
+    start = end;
+    return stop;
+  });
+  const donut = document.getElementById('donut');
+  donut.style.background = `conic-gradient(${stops.join(', ')})`;
+  donut.setAttribute('aria-label', categories.map(([name, amount]) => `${name} ${percent(amount)}`).join(', '));
+  donut.hidden = categories.length === 0;
+  document.getElementById('report-empty').hidden = categories.length > 0;
+
+  document.getElementById('category-list').replaceChildren(...categories.map(([name, amount]) => {
+    const swatch = span('swatch', '');
+    swatch.style.background = categoryColor(name);
+    const summary = document.createElement('summary');
+    summary.append(swatch, span('what', name), span('pct', percent(amount)), span('amt', peso.format(amount / 100)));
+    const entries = document.createElement('ul');
+    entries.className = 'list';
+    entries.append(...newestFirst(data.transactions.filter((t) =>
+      t.type === 'expense' && t.category === name && t.date.startsWith(reportMonth))).map(entryRow));
+    const details = document.createElement('details');
+    details.append(summary, entries);
+    return details;
+  }));
+
+  // Cash flow
+  document.getElementById('saved-total').textContent = peso.format(r.saved / 100);
+  document.getElementById('saved-compare').textContent = compareText(r.saved, before.saved);
+  const flowRow = (label, note, amount, sign) => {
+    const what = span('what', label);
+    what.append(Object.assign(document.createElement('small'), { textContent: note }));
+    const li = document.createElement('li');
+    li.className = 'flow';
+    li.append(what, span('amt', sign + peso.format(amount / 100)));
+    return li;
+  };
+  document.getElementById('cashflow-list').replaceChildren(
+    flowRow('Income', 'Into banks, e-wallets and cash', r.income, '+'),
+    flowRow('Spent', 'From banks, e-wallets and cash', r.expensesPaid, '−'),
+    flowRow('Credit card payments', 'Bills paid to your cards', r.cardPayments, '−'),
+  );
+}
+
+document.getElementById('prev-month').addEventListener('click', () => {
+  reportMonth = shiftMonth(reportMonth, -1);
+  renderReport();
+});
+document.getElementById('next-month').addEventListener('click', () => {
+  reportMonth = shiftMonth(reportMonth, 1);
+  renderReport();
+});
+document.getElementById('report-view').addEventListener('change', renderReport);
+document.getElementById('print').addEventListener('click', () => window.print());
 
 render();
