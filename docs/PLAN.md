@@ -48,8 +48,8 @@ Later: budgets, savings goals and receipt photos.
 
 ### Screens
 - **Bottom tabs**: Home · Accounts · Reports · Settings, plus a big **+** button that is always visible.
-- **Home**: total balance, credit cards owed, this month's spending with its top categories, recent entries.
-- **Accounts**: each account with its balance; Adjust balance.
+- **Home**: this month's spending with its top categories, recent entries.
+- **Accounts**: total balance, credit cards owed, each account with its balance; Adjust balance.
 - **Reports**: month picker, Spending | Cash flow switch, donut chart, total vs last month,
   category list (tap a category to see its transactions), **Save as PDF** (browser print + print stylesheet).
 - **Settings**: categories, export/import.

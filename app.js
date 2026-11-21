@@ -296,7 +296,7 @@ function entryRow(tx) {
 const newestFirst = (list) => [...list].reverse().sort((a, b) => b.date.localeCompare(a.date));
 
 function render() {
-  // Home: total of banks and e-wallets (Cash has no balance), and what the cards owe
+  // Accounts tab: total of banks and e-wallets (Cash has no balance), and what the cards owe
   const banks = data.accounts.filter((a) => a.kind === 'bank');
   const cards = data.accounts.filter((a) => a.kind === 'card');
   const total = banks.reduce((sum, a) => sum + balance(a.id), 0);

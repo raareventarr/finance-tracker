@@ -200,7 +200,7 @@ legend, .field { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 .actions .primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .actions .danger { color: var(--danger); margin-right: auto; }
 
-/* Home: hide-amounts toggle and backup reminder */
+/* Accounts: hide-amounts toggle. Home: backup reminder */
 .balance-head { display: flex; align-items: center; justify-content: space-between; }
 #toggle-amounts {
   font: inherit;

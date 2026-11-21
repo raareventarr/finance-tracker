@@ -21,12 +21,6 @@
         <button class="export">Back up now</button>
       </div>
 
-      <div class="balance-head">
-        <h1 class="label">Total balance</h1>
-        <button id="toggle-amounts" aria-pressed="false"></button>
-      </div>
-      <p class="balance">₱0.00</p>
-      <p class="owed" id="owed" hidden></p>
       <h2>Recent</h2>
       <ul class="list" id="recent"></ul>
       <p class="empty" id="recent-empty">No entries yet. Tap + to add your first expense.</p>
@@ -34,6 +28,12 @@
 
     <section id="accounts" hidden>
       <h1>Accounts</h1>
+      <div class="balance-head">
+        <h2 class="label">Total balance</h2>
+        <button id="toggle-amounts" aria-pressed="false"></button>
+      </div>
+      <p class="balance">₱0.00</p>
+      <p class="owed" id="owed" hidden></p>
       <ul class="list" id="account-list"></ul>
       <p class="empty" id="accounts-empty">No accounts yet. Add your banks and e-wallets to track their balances.</p>
       <button class="wide" id="add-account">Add account</button>
